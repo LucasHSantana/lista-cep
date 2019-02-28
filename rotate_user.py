@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from time import sleep
+import socket
 
 USER_AGENT_LIST = [
    #Chrome
@@ -104,7 +105,7 @@ class RotateConnection(object):
             print(e)           
             self._driver.close()     
 
-        for x in range(4):
+        for x in range(14):
             for i in self._driver.find_elements(By.XPATH, '//*[@id="proxylisttable"]/tbody/tr'):                        
                 if i.find_element(By.XPATH, './/td[7]').text == 'yes':                    
                     proxy = ":".join([i.find_element_by_xpath('.//td[1]').text, i.find_element_by_xpath('.//td[2]').text])
@@ -115,7 +116,21 @@ class RotateConnection(object):
         return self._proxies
 
     def get_random_proxy(self):
-        if len(self._proxies) > 0:
-            return random.choice(list(self._proxies))
-        else:
-            return random.choice(list(self.get_proxies()))
+        while True:
+            if len(self._proxies) > 0:            
+                proxy = random.choice(list(self._proxies))                 
+            else:
+                proxy = random.choice(list(self.get_proxies()))
+
+            if self.tcpping(proxy.split(':')[0], proxy.split(':')[1], 5):
+                return proxy                          
+
+    def tcpping(self, host, port=8080, timeout=2):
+        s = socket.socket()
+        s.settimeout(timeout)
+        try:
+            s.connect((host, int(port)))
+            s.close()
+            return True
+        except Exception:
+            return False
