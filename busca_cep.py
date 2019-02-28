@@ -1,11 +1,8 @@
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait, Select 
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import os
-from time import sleep
-from random import randint
 from rotate_user import RotateConnection
 
 class CEP:
