@@ -71,5 +71,6 @@ if __name__ == '__main__':
     cep = CEP()
     end = cep.get_endereco_unico('17204280')    
     print(end)
-    end = cep.get_endereco_unico('17204286')
+    end = cep.get_endereco_unico('17201-180')
     print(end)
+    

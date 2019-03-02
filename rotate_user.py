@@ -5,6 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from time import sleep
 import socket
+from selenium.webdriver.common.action_chains import ActionChains
 
 USER_AGENT_LIST = [
    #Chrome
@@ -53,7 +54,7 @@ class RotateConnection(object):
         #Configura as opções do navegador
         agent = self.get_agent()
         proxy = self.get_random_proxy()
-
+        
         print('Mudando configurações do driver')
         print(f'User-Agent: {agent}')
         print(f'Proxy: {proxy}')
@@ -91,19 +92,16 @@ class RotateConnection(object):
             
             attempts += 1        
 
-    def get_proxies(self, url=''):
-        print('Recuperando proxies, isso pode demorar alguns minutos.')
-        if url == '':
-            self._driver.get('https://free-proxy-list.net/')
-        else:
-            self._driver.get(url)
+    def get_proxies2(self):
+        print('Recuperando proxies, isso pode demorar alguns minutos.')        
+        self._driver.get('https://free-proxy-list.net/')        
+        self._driver.maximize_window()
 
         try:
             WebDriverWait(self._driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="proxylisttable_next"]/a')))
         except Exception as e:
             print('Erro ao carregar a página')
-            print(e)           
-            self._driver.close()     
+            print(e)                       
 
         for x in range(14):
             for i in self._driver.find_elements(By.XPATH, '//*[@id="proxylisttable"]/tbody/tr'):                        
@@ -113,6 +111,34 @@ class RotateConnection(object):
 
             self.delay()
             self._driver.find_element(By.XPATH, '//*[@id="proxylisttable_next"]/a').click()
+        return self._proxies
+    
+    def get_proxies(self):
+        print('Recuperando proxies, isso pode demorar alguns minutos.')
+        self._driver.get('https://hidemyna.me/en/proxy-list/')        
+        self._driver.maximize_window()
+        try:
+            http = WebDriverWait(self._driver, 30).until(EC.presence_of_element_located((By.XPATH, '//*[@id="content-section"]/section[1]/div/div[2]/div[1]/div[2]/div[1]/label[1]/span')))            
+            http.click()
+            self._driver.find_element(By.XPATH, '//*[contains(@class,"pform__buttons")]/a[1]').click()    
+        except Exception as e:
+            print('Erro ao carregar a página')
+            print(e)   
+
+        while True:
+            for row in self._driver.find_elements(By.XPATH, '//*[contains(@class, "proxy__t")]/tbody/tr'):
+                ms = str(row.find_element(By.XPATH, './/td[4]/div/div/p').text).split(' ')[0]
+                if int(ms) < 2500:
+                    proxy = ':'.join([row.find_element(By.XPATH, './/td[1]').text, row.find_element(By.XPATH, './/td[2]').text])
+                    self._proxies.add(proxy)            
+
+            count = len(self._driver.find_elements(By.XPATH, '//*[contains(@class, "arrow__right")]'))
+            if count == 0:
+                break
+            
+            next = self._driver.find_element(By.XPATH, '//*[contains(@class, "arrow__right")]/a')            
+            ActionChains(self._driver).click(next).perform()         
+            
         return self._proxies
 
     def get_random_proxy(self):
@@ -124,6 +150,8 @@ class RotateConnection(object):
 
             if self.tcpping(proxy.split(':')[0], proxy.split(':')[1], 5):
                 return proxy                          
+            else:
+                self._proxies.remove(proxy)
 
     def tcpping(self, host, port=8080, timeout=2):
         s = socket.socket()
@@ -134,3 +162,14 @@ class RotateConnection(object):
             return True
         except Exception:
             return False
+
+if __name__ == '__main__':
+    import os
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    chromedriver = os.path.join(dir_path, 'chromedriver.exe') 
+
+    rotate = RotateConnection(chromedriver)
+    lista = rotate._proxies
+    print(lista)
+
